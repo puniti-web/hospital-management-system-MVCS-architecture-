@@ -1,0 +1,7 @@
+{
+  "doctorId": 1,
+  "appointmentDate": "2025-10-16",
+  "startTime": "10:00:00",
+  "endTime": "11:00:00",
+  "reason": "General Checkup"
+}
