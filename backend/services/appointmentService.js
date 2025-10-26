@@ -39,13 +39,13 @@
 const appointmentModel = require('../models/appointmentModel');
 
 const appointmentService = {
-  book: async ({ PatientID, DoctorID, AppointmentDate, StartTime, EndTime, Reason }) => {
+  book: async ({ PatientID, DoctorID, AppointmentDate, StartTime, EndTime, Reason, Status }) => {
     // Overlap guard
     const clashes = await appointmentModel.findOverlap({ DoctorID, AppointmentDate, StartTime, EndTime });
     if (clashes.length > 0) {
       return { success: false, message: 'Selected slot overlaps with an existing appointment.' };
     }
-    const id = await appointmentModel.create({ PatientID, DoctorID, AppointmentDate, StartTime, EndTime, Reason });
+    const id = await appointmentModel.create({ PatientID, DoctorID, AppointmentDate, StartTime, EndTime, Reason, Status });
     return { success: true, id };
   },
 

@@ -25,6 +25,15 @@ const doctorModel = {
       ORDER BY Name ASC`;
     db.query(sql, (err, rows) => err ? reject(err) : resolve(rows));
   }),
+
+  findByEmailOrContact: (emailOrContact) =>
+    new Promise((resolve, reject) => {
+      const sql = `SELECT * FROM Doctor WHERE Email = ? OR Contact = ? LIMIT 1`;
+      db.query(sql, [emailOrContact, emailOrContact], (err, rows) => {
+        if (err) return reject(err);
+        resolve(rows);
+      });
+    }),
 };
 
 module.exports = doctorModel;

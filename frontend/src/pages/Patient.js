@@ -51,6 +51,12 @@ export default function PatientDashboard() {
         let normalized = rows.map((d) => {
           const specRaw = d.Specialization ?? d.specialization ?? "General";
           const spec = (specRaw || "General").toString().trim();
+          console.log("🔧 Normalizing doctor:", {
+            id: d.DoctorID ?? d.id,
+            name: (d.Name ?? d.name ?? "").toString().trim(),
+            specialization: spec,
+            rawSpecialization: d.Specialization ?? d.specialization
+          });
           return {
             id: d.DoctorID ?? d.id, // must be the numeric DB id
             name: (d.Name ?? d.name ?? "").toString().trim(),
@@ -73,7 +79,8 @@ export default function PatientDashboard() {
         }
 
         setDoctors(normalized);
-        console.log("Doctors loaded:", normalized);
+        console.log("✅ Doctors loaded:", normalized.length, "doctors");
+        console.log("Doctor details:", normalized.map(d => `${d.name} - ${d.specialization}`));
       } catch {
         console.log("Doctors API error — using fallback list");
         setDoctors([
@@ -125,6 +132,9 @@ export default function PatientDashboard() {
               {currentView === "book-appointment" && (
                 <BookAppointment doctors={doctors} reload={loadData} />
               )}
+              {currentView === "patient-registration" && (
+                <PatientRegistration />
+              )}
               {currentView === "doctors" && <Doctors doctors={doctors} />}
               {currentView === "billing" && <Billing bills={bills} />}
               {currentView === "records" && (
@@ -144,6 +154,7 @@ function Sidebar({ currentView, setCurrentView, logout, patientName }) {
     { id: "dashboard", icon: "🏠", label: "Dashboard" },
     { id: "appointments", icon: "📅", label: "Appointments" },
     { id: "book-appointment", icon: "➕", label: "Book Appointment" },
+    { id: "patient-registration", icon: "👤", label: "Patient Registration" },
     { id: "doctors", icon: "👨‍⚕", label: "My Doctors" },
     { id: "records", icon: "📋", label: "Medical Records" },
     { id: "billing", icon: "💳", label: "Billing" },
@@ -369,7 +380,8 @@ function BookAppointment({ doctors, reload }) {
     doctorId: "",
     appointmentDate: "",
     appointmentTime: "",
-    reason: ""
+    reason: "",
+    status: "Scheduled" // Default status as per schema
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -392,15 +404,25 @@ function BookAppointment({ doctors, reload }) {
   const specMatch = (docSpec, probSpec) => {
     const a = canonical(docSpec);
     const b = canonical(probSpec);
-    return !!a && !!b && (a === b || a.includes(b) || b.includes(a));
+    const matches = !!a && !!b && (a === b || a.includes(b) || b.includes(a));
+    console.log("🔍 Comparing:", { docSpec, probSpec, a, b, matches });
+    return matches;
   };
 
   const getFilteredDoctors = () => {
     if (!formData.problem) return doctors;
     const sel = problems.find((p) => p.id === formData.problem);
     const desired = sel?.specialization || "General";
+    console.log("🔍 Filtering doctors:", {
+      problemId: formData.problem,
+      desired: desired,
+      totalDoctors: doctors.length,
+      allSpecializations: [...new Set(doctors.map(d => d.specialization))]
+    });
     const filtered = doctors.filter((d) => specMatch(d.specialization, desired));
-    return filtered.length ? filtered : doctors; // fallback so UI isn't blank
+    console.log("✅ Filtered doctors:", filtered.length, "found");
+    console.log("Filtered details:", filtered.map(d => `${d.name} - ${d.specialization}`));
+    return filtered; // Return filtered results (empty if no match)
   };
 
   const handleProblemSelect = (problemId) => {
@@ -428,7 +450,8 @@ function BookAppointment({ doctors, reload }) {
         appointmentDate: formData.appointmentDate,  // YYYY-MM-DD
         startTime,
         endTime,
-        reason: formData.reason
+        reason: formData.reason,
+        status: formData.status
       });
 
       setSuccess(true);
@@ -613,6 +636,177 @@ function BookAppointment({ doctors, reload }) {
             </form>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+/* ===================== Patient Registration ===================== */
+function PatientRegistration() {
+  const [formData, setFormData] = useState({
+    name: "",
+    age: "",
+    gender: "",
+    contact: "",
+    address: "",
+    email: "",
+    password: ""
+  });
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const handleChange = (e) => {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      await api.post("/patients/register", formData);
+      setSuccess(true);
+      setFormData({
+        name: "",
+        age: "",
+        gender: "",
+        contact: "",
+        address: "",
+        email: "",
+        password: ""
+      });
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (error) {
+      console.error("Error registering patient:", error);
+      alert(error?.response?.data?.message || "Failed to register patient. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="patient-registration-container">
+      <h1 className="page-title">👤 Patient Registration</h1>
+
+      {success && (
+        <div className="success-alert">
+          <span className="success-icon">✅</span>
+          <span>Patient registered successfully!</span>
+        </div>
+      )}
+
+      <div className="registration-form-card">
+        <form onSubmit={handleSubmit} className="registration-form">
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="name">Full Name *</label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="Enter your full name"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="age">Age *</label>
+              <input
+                type="number"
+                id="age"
+                name="age"
+                value={formData.age}
+                onChange={handleChange}
+                placeholder="Enter your age"
+                min="1"
+                max="120"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="gender">Gender *</label>
+              <select
+                id="gender"
+                name="gender"
+                value={formData.gender}
+                onChange={handleChange}
+                required
+              >
+                <option value="">Select gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="contact">Contact Number *</label>
+              <input
+                type="tel"
+                id="contact"
+                name="contact"
+                value={formData.contact}
+                onChange={handleChange}
+                placeholder="Enter your contact number"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="address">Address *</label>
+            <textarea
+              id="address"
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+              placeholder="Enter your complete address"
+              rows="3"
+              required
+            />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="email">Email Address *</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Enter your email address"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="password">Password *</label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Enter a secure password"
+                minLength="6"
+                required
+              />
+            </div>
+          </div>
+
+          <button type="submit" className="register-patient-btn" disabled={loading}>
+            {loading ? "Registering..." : "Register Patient"}
+          </button>
+        </form>
       </div>
     </div>
   );

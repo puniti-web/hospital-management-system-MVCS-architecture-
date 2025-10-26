@@ -50,7 +50,7 @@ exports.book = async (req, res) => {
     const patientIdFromToken = req.user?.id;
     if (!patientIdFromToken) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
-    const { doctorId, appointmentDate, startTime, endTime, reason } = req.body;
+    const { doctorId, appointmentDate, startTime, endTime, reason, status } = req.body;
 
     const result = await appointmentService.book({
       PatientID: patientIdFromToken,
@@ -59,6 +59,7 @@ exports.book = async (req, res) => {
       StartTime: startTime,                   // 'HH:MM:SS'
       EndTime: endTime,                       // 'HH:MM:SS'
       Reason: reason || null,
+      Status: status || 'Scheduled',
     });
 
     if (!result.success) return res.status(409).json(result);

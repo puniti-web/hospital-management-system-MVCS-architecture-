@@ -1,23 +1,53 @@
-const db = require("../config/db");
+const db = require('../config/db');
 
-exports.create = (patient, cb) => {
-  const sql = `INSERT INTO Patient (Name, Age, Gender, Contact, Address, Email, Password) VALUES (?,?,?,?,?,?,?)`;
-  db.query(
-    sql,
-    [
-      patient.Name,
-      patient.Age || null,
-      patient.Gender || null,
-      patient.Contact || null,
-      patient.Address || null,
-      patient.Email,
-      patient.Password
-    ],
-    cb
-  );
+const patientModel = {
+  findByEmail: (email) =>
+    new Promise((resolve, reject) => {
+      const sql = `SELECT * FROM Patient WHERE Email = ?`;
+      db.query(sql, [email], (err, rows) => {
+        if (err) return reject(err);
+        resolve(rows.length > 0 ? rows[0] : null);
+      });
+    }),
+
+  findByEmailOrContact: (emailOrContact) =>
+    new Promise((resolve, reject) => {
+      const sql = `SELECT * FROM Patient WHERE Email = ? OR Contact = ? LIMIT 1`;
+      db.query(sql, [emailOrContact, emailOrContact], (err, rows) => {
+        if (err) return reject(err);
+        resolve(rows);
+      });
+    }),
+
+  create: ({ Name, Age, Gender, Contact, Address, Email, Password }) =>
+    new Promise((resolve, reject) => {
+      const sql = `
+        INSERT INTO Patient (Name, Age, Gender, Contact, Address, Email, Password)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`;
+      const params = [Name, Age, Gender, Contact, Address, Email, Password];
+      db.query(sql, params, (err, result) => {
+        if (err) return reject(err);
+        resolve(result.insertId);
+      });
+    }),
+
+  findById: (patientId) =>
+    new Promise((resolve, reject) => {
+      const sql = `SELECT * FROM Patient WHERE PatientID = ?`;
+      db.query(sql, [patientId], (err, rows) => {
+        if (err) return reject(err);
+        resolve(rows.length > 0 ? rows[0] : null);
+      });
+    }),
+
+  findAll: () =>
+    new Promise((resolve, reject) => {
+      const sql = `SELECT PatientID, Name, Age, Gender, Contact, Address, Email FROM Patient ORDER BY Name`;
+      db.query(sql, (err, rows) => {
+        if (err) return reject(err);
+        resolve(rows);
+      });
+    })
 };
 
-exports.findByEmailOrContact = (emailOrContact, cb) => {
-  const sql = `SELECT * FROM Patient WHERE Email=? OR Contact=? LIMIT 1`;
-  db.query(sql, [emailOrContact, emailOrContact], cb);
-};
+module.exports = patientModel;

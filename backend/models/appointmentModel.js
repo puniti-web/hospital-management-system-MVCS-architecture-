@@ -56,13 +56,13 @@ const appointmentModel = {
       db.query(sql, params, (err, rows) => err ? reject(err) : resolve(rows));
     }),
 
-  create: ({ PatientID, DoctorID, AppointmentDate, StartTime, EndTime, Reason }) =>
+  create: ({ PatientID, DoctorID, AppointmentDate, StartTime, EndTime, Reason, Status }) =>
     new Promise((resolve, reject) => {
       const sql = `
         INSERT INTO Appointment
           (PatientID, DoctorID, AppointmentDate, StartTime, EndTime, Reason, Status)
-        VALUES (?, ?, ?, ?, ?, ?, 'Confirmed')`;
-      const params = [PatientID, DoctorID, AppointmentDate, StartTime, EndTime, Reason || null];
+        VALUES (?, ?, ?, ?, ?, ?, ?)`;
+      const params = [PatientID, DoctorID, AppointmentDate, StartTime, EndTime, Reason || null, Status || 'Scheduled'];
       db.query(sql, params, (err, result) => err ? reject(err) : resolve(result.insertId));
     }),
 
