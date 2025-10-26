@@ -42,14 +42,33 @@
 //     res.json(data);
 //   });
 // };
-const appointmentService = require("../services/appointmentService");
+const appointmentService = require('../services/appointmentService');
 
-exports.book = (req, res) => {
-  appointmentService.book(req.user.id, req.body, (err, result) => {
-    if (err) return res.status(err.status).json({ message: err.message });
-    res.json(result);
-  });
+exports.book = async (req, res) => {
+  try {
+    // req.user is set by auth middleware; PatientID comes from token
+    const patientIdFromToken = req.user?.id;
+    if (!patientIdFromToken) return res.status(401).json({ success: false, message: 'Unauthorized' });
+
+    const { doctorId, appointmentDate, startTime, endTime, reason } = req.body;
+
+    const result = await appointmentService.book({
+      PatientID: patientIdFromToken,
+      DoctorID: Number(doctorId),
+      AppointmentDate: appointmentDate,       // 'YYYY-MM-DD'
+      StartTime: startTime,                   // 'HH:MM:SS'
+      EndTime: endTime,                       // 'HH:MM:SS'
+      Reason: reason || null,
+    });
+
+    if (!result.success) return res.status(409).json(result);
+    res.json({ success: true, id: result.id });
+  } catch (e) {
+    console.error('book:', e);
+    res.status(500).json({ success: false, message: 'Booking failed' });
+  }
 };
+
 
 exports.doctorMy = (req, res) => {
   appointmentService.listForDoctor(req.user.id, (err, rows) => {
