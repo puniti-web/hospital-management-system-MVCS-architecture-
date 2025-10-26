@@ -9,3 +9,8 @@ exports.findByEmailOrContact = (emailOrContact, cb) => {
   const sql = `SELECT * FROM Doctor WHERE Email=? OR Contact=? LIMIT 1`;
   db.query(sql, [emailOrContact, emailOrContact], cb);
 };
+
+exports.findAll = (cb) => {
+  const sql = `SELECT * FROM Doctor ORDER BY Name`;
+  db.query(sql, cb);
+};

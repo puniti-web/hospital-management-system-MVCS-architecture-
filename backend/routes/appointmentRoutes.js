@@ -73,4 +73,13 @@ router.post("/book", auth(["patient"]), ctrl.book);
 router.get("/doctor/my", auth(["doctor"]), ctrl.doctorMy);
 router.get("/patient/my", auth(["patient"]), ctrl.patientMy);
 
+// Test endpoint (remove in production)
+router.post("/test-book", (req, res) => {
+  const appointmentService = require("../services/appointmentService");
+  appointmentService.book(1, req.body, (err, result) => {
+    if (err) return res.status(err.status).json({ message: err.message });
+    res.json(result);
+  });
+});
+
 module.exports = router;
