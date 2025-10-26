@@ -1,17 +1,37 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./Login.css";
 
 export default function Login() {
   const navigate = useNavigate();
-  const [role, setRole] = useState("patient");
+  const [selectedRole, setSelectedRole] = useState(null);
+  const [showLoginForm, setShowLoginForm] = useState(false);
   const [formData, setFormData] = useState({
     emailOrContact: "",
     password: ""
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    // Trigger pop-up animation for cards
+    const timer = setTimeout(() => {
+      const cards = document.querySelectorAll('.role-card');
+      cards.forEach((card, index) => {
+        setTimeout(() => {
+          card.classList.add('pop-in');
+        }, index * 150);
+      });
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleRoleSelect = (role) => {
+    setSelectedRole(role);
+    setShowLoginForm(true);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,7 +40,7 @@ export default function Login() {
 
     try {
       const response = await axios.post("http://localhost:5000/api/auth/login", {
-        role: role,
+        role: selectedRole,
         emailOrContact: formData.emailOrContact,
         password: formData.password
       });
@@ -50,71 +70,27 @@ export default function Login() {
     });
   };
 
-  return (
-    <div className="login-page">
-      <div className="login-container">
-        {/* Left Side - Branding */}
-        <div className="login-left">
-          <div className="branding">
-            <div className="logo-large">
-              <span className="logo-icon-large">🏥</span>
-              <h1>TEAM UTPA</h1>
-            </div>
-            <p className="tagline">Modern Hospital Management System</p>
-            <div className="features">
-              <div className="feature-item">
-                <span className="feature-icon">✅</span>
-                <span>Easy Appointment Booking</span>
-              </div>
-              <div className="feature-item">
-                <span className="feature-icon">✅</span>
-                <span>Secure Patient Records</span>
-              </div>
-              <div className="feature-item">
-                <span className="feature-icon">✅</span>
-                <span>24/7 Access</span>
-              </div>
-            </div>
-          </div>
-        </div>
+  const handleBack = () => {
+    if (showLoginForm) {
+      setShowLoginForm(false);
+      setSelectedRole(null);
+      setError("");
+      setFormData({ emailOrContact: "", password: "" });
+    } else {
+      navigate("/");
+    }
+  };
 
-        {/* Right Side - Login Form */}
-        <div className="login-right">
-          <div className="login-card">
-            <div className="login-header">
-              <h2>Welcome Back</h2>
-              <p>Login to access your dashboard</p>
-            </div>
-
-            {/* Role Selection */}
-            <div className="role-selector">
-              <button
-                type="button"
-                className={`role-btn ${role === "patient" ? "active" : ""}`}
-                onClick={() => setRole("patient")}
-              >
-                <span className="role-icon">👤</span>
-                <span>Patient</span>
-              </button>
-              <button
-                type="button"
-                className={`role-btn ${role === "doctor" ? "active" : ""}`}
-                onClick={() => setRole("doctor")}
-              >
-                <span className="role-icon">👨‍⚕️</span>
-                <span>Doctor</span>
-              </button>
-              <button
-                type="button"
-                className={`role-btn ${role === "admin" ? "active" : ""}`}
-                onClick={() => setRole("admin")}
-              >
-                <span className="role-icon">⚙️</span>
-                <span>Admin</span>
-              </button>
-            </div>
-
-            {/* Error Message */}
+  if (showLoginForm) {
+    return (
+      <div className="login-page">
+        <div className="login-container-simple">
+          <a href="#" onClick={(e) => { e.preventDefault(); handleBack(); }} className="back-link">
+            ← Back to Role Selection
+          </a>
+          <div className="login-form-card">
+            <h1>Login as {selectedRole}</h1>
+            
             {error && (
               <div className="error-alert">
                 <span className="error-icon">⚠️</span>
@@ -122,15 +98,14 @@ export default function Login() {
               </div>
             )}
 
-            {/* Login Form */}
-            <form onSubmit={handleSubmit} className="login-form">
+            <form onSubmit={handleSubmit} className="login-form-simple">
               <div className="form-group">
                 <label htmlFor="emailOrContact">Email or Phone</label>
                 <input
                   type="text"
                   id="emailOrContact"
                   name="emailOrContact"
-                  placeholder="Enter your email or phone number"
+                  placeholder="Enter your email or phone"
                   value={formData.emailOrContact}
                   onChange={handleChange}
                   required
@@ -152,46 +127,73 @@ export default function Login() {
                 />
               </div>
 
-              <div className="form-options">
-                <label className="remember-me">
-                  <input type="checkbox" />
-                  <span>Remember me</span>
-                </label>
-                <a href="#" className="forgot-password">
-                  Forgot password?
-                </a>
-              </div>
-
               <button type="submit" className="login-btn" disabled={loading}>
-                {loading ? (
-                  <>
-                    <span className="spinner-small"></span>
-                    <span>Logging in...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Login</span>
-                    <span>→</span>
-                  </>
-                )}
+                {loading ? "Logging in..." : "Login"}
               </button>
-            </form>
 
-            {/* Demo Credentials */}
-            <div className="demo-credentials">
-              <p className="demo-title">Demo Credentials:</p>
-              <div className="demo-list">
-                <div className="demo-item">
-                  <strong>Patient:</strong> patient@example.com / patient123
-                </div>
-                <div className="demo-item">
-                  <strong>Doctor:</strong> doctor@example.com / doctor123
-                </div>
-                <div className="demo-item">
-                  <strong>Admin:</strong> admin@example.com / admin123
-                </div>
+              <div className="demo-credentials-simple">
+                <p><strong>Demo:</strong></p>
+                {selectedRole === "patient" && <p>patient@example.com / patient123</p>}
+                {selectedRole === "doctor" && <p>doctor@example.com / doctor123</p>}
+                {selectedRole === "admin" && <p>admin@example.com / admin123</p>}
               </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="role-selection-page">
+      <div className="role-selection-container">
+        <a href="#" onClick={(e) => { e.preventDefault(); navigate("/"); }} className="back-link">
+          ← Back to Home
+        </a>
+
+        <div className="role-selection-header">
+          <h1 className="role-title">Select Your Role</h1>
+          <p className="role-subtitle">Choose how you'd like to access the system</p>
+        </div>
+
+        <div className="role-cards-container">
+          <div className="role-card patient-card">
+            <div className="role-icon-wrapper patient-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C8.13 2 5 5.13 5 9C5 11.38 6.19 13.47 8 14.74V17C8 17.55 8.45 18 9 18H15C15.55 18 16 17.55 16 17V14.74C17.81 13.47 19 11.38 19 9C19 5.13 15.87 2 12 2ZM14 10H10V12H14V10ZM14 6H10V8H14V6Z"/>
+              </svg>
             </div>
+            <h3>Patient</h3>
+            <p>Book appointments, view records, and manage your health</p>
+            <button onClick={() => handleRoleSelect("patient")} className="continue-btn">
+              Continue as Patient
+            </button>
+          </div>
+
+          <div className="role-card doctor-card">
+            <div className="role-icon-wrapper doctor-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 4V6L10 8.5V7L8 8V10.5L10 9V11L21 9ZM3 13V22L12 24L21 22V13H3Z"/>
+              </svg>
+            </div>
+            <h3>Doctor</h3>
+            <p>Manage patients, appointments, and medical records</p>
+            <button onClick={() => handleRoleSelect("doctor")} className="continue-btn">
+              Continue as Doctor
+            </button>
+          </div>
+
+          <div className="role-card admin-card">
+            <div className="role-icon-wrapper admin-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 1L3 5V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V5L12 1ZM12 7C13.4 7 14.8 7.2 15.9 7.7C14.7 8.7 13.3 9.5 12 9.5C10.7 9.5 9.3 8.7 8.1 7.7C9.2 7.2 10.6 7 12 7ZM12 11.5C13.1 11.5 14.2 11.8 15.2 12.2C14.2 13 13 13.5 12 13.5C11 13.5 9.8 13 8.8 12.2C9.8 11.8 10.9 11.5 12 11.5ZM12 15.5C13.3 15.5 14.7 16 15.9 17C14.7 18 13.3 18.5 12 18.5C10.7 18.5 9.3 18 8.1 17C9.3 16 10.7 15.5 12 15.5Z"/>
+              </svg>
+            </div>
+            <h3>Admin</h3>
+            <p>Oversee operations, manage users, and view analytics</p>
+            <button onClick={() => handleRoleSelect("admin")} className="continue-btn">
+              Continue as Admin
+            </button>
           </div>
         </div>
       </div>

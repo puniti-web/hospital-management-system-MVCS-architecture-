@@ -25,9 +25,11 @@ export default function PatientDashboard() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [appointmentsRes] = await Promise.all([api.get("/appointments/patient/my")]);
+      // Load appointments
+      const appointmentsRes = await api.get("/appointments/patient/my");
       setAppointments(appointmentsRes.data);
 
+      // Load bills
       try {
         const billsRes = await api.get("/billing/my");
         setBills(billsRes.data);
@@ -35,21 +37,27 @@ export default function PatientDashboard() {
         console.log("Bills not available");
       }
 
-      const uniqueDoctors = [];
-      const doctorMap = new Map();
-      appointmentsRes.data.forEach((apt) => {
-        if (!doctorMap.has(apt.DoctorName)) {
-          doctorMap.set(apt.DoctorName, {
-            name: apt.DoctorName,
-            specialization: apt.Specialization || "General",
-            appointments: 1,
-          });
-          uniqueDoctors.push(doctorMap.get(apt.DoctorName));
-        } else {
-          doctorMap.get(apt.DoctorName).appointments++;
-        }
-      });
-      setDoctors(uniqueDoctors);
+      // Load all doctors from database
+      try {
+        const doctorsRes = await api.get("/doctors");
+        setDoctors(doctorsRes.data);
+      } catch (err) {
+        console.log("Doctors API not available, using sample data");
+        // Fallback to sample doctors data
+        const sampleDoctors = [
+          { id: 1, name: "Dr. Sarah Johnson", specialization: "Cardiology", contact: "9876543210", email: "sarah.johnson@hospital.com" },
+          { id: 2, name: "Dr. Michael Chen", specialization: "Neurology", contact: "9876543211", email: "michael.chen@hospital.com" },
+          { id: 3, name: "Dr. Emily Rodriguez", specialization: "Orthopedics", contact: "9876543212", email: "emily.rodriguez@hospital.com" },
+          { id: 4, name: "Dr. James Wilson", specialization: "Dermatology", contact: "9876543213", email: "james.wilson@hospital.com" },
+          { id: 5, name: "Dr. Priya Sharma", specialization: "Pediatrics", contact: "9876543214", email: "priya.sharma@hospital.com" },
+          { id: 6, name: "Dr. Robert Brown", specialization: "General", contact: "9876543215", email: "robert.brown@hospital.com" },
+          { id: 7, name: "Dr. Lisa Anderson", specialization: "Cardiology", contact: "9876543216", email: "lisa.anderson@hospital.com" },
+          { id: 8, name: "Dr. David Kumar", specialization: "Neurology", contact: "9876543217", email: "david.kumar@hospital.com" },
+          { id: 9, name: "Dr. Maria Garcia", specialization: "Orthopedics", contact: "9876543218", email: "maria.garcia@hospital.com" },
+          { id: 10, name: "Dr. John Smith", specialization: "General", contact: "9876543219", email: "john.smith@hospital.com" }
+        ];
+        setDoctors(sampleDoctors);
+      }
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
@@ -90,6 +98,9 @@ export default function PatientDashboard() {
                   reload={loadData}
                 />
               )}
+              {currentView === "book-appointment" && (
+                <BookAppointment doctors={doctors} reload={loadData} />
+              )}
               {currentView === "doctors" && <Doctors doctors={doctors} />}
               {currentView === "billing" && <Billing bills={bills} />}
               {currentView === "records" && (
@@ -108,6 +119,7 @@ function Sidebar({ currentView, setCurrentView, logout, patientName }) {
   const menuItems = [
     { id: "dashboard", icon: "🏠", label: "Dashboard" },
     { id: "appointments", icon: "📅", label: "Appointments" },
+    { id: "book-appointment", icon: "➕", label: "Book Appointment" },
     { id: "doctors", icon: "👨‍⚕", label: "My Doctors" },
     { id: "records", icon: "📋", label: "Medical Records" },
     { id: "billing", icon: "💳", label: "Billing" },
@@ -118,7 +130,7 @@ function Sidebar({ currentView, setCurrentView, logout, patientName }) {
       <div className="sidebar-header">
         <div className="logo">
           <span className="logo-icon">🏥</span>
-          <span className="logo-text">TEAM UTPA</span>
+          <span className="logo-text">MediCare</span>
         </div>
       </div>
 
@@ -323,4 +335,271 @@ function formatDate(dateString) {
     day: "numeric",
     year: "numeric",
   });
+}
+
+// ======== BOOK APPOINTMENT ========
+function BookAppointment({ doctors, reload }) {
+  const [currentStage, setCurrentStage] = useState(1);
+  const [formData, setFormData] = useState({
+    problem: "",
+    doctorId: "",
+    appointmentDate: "",
+    appointmentTime: "",
+    reason: ""
+  });
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  // Sample problems with corresponding specializations
+  const problems = [
+    { id: "chest-pain", name: "Chest Pain", specialization: "Cardiology", icon: "❤️" },
+    { id: "headache", name: "Headache/Migraine", specialization: "Neurology", icon: "🧠" },
+    { id: "joint-pain", name: "Joint Pain", specialization: "Orthopedics", icon: "🦴" },
+    { id: "skin-rash", name: "Skin Rash", specialization: "Dermatology", icon: "🦠" },
+    { id: "child-fever", name: "Child Fever", specialization: "Pediatrics", icon: "👶" },
+    { id: "general-checkup", name: "General Checkup", specialization: "General", icon: "🩺" },
+    { id: "back-pain", name: "Back Pain", specialization: "Orthopedics", icon: "🦴" },
+    { id: "heart-palpitations", name: "Heart Palpitations", specialization: "Cardiology", icon: "❤️" },
+    { id: "memory-issues", name: "Memory Issues", specialization: "Neurology", icon: "🧠" },
+    { id: "acne", name: "Acne/Skin Issues", specialization: "Dermatology", icon: "🦠" }
+  ];
+
+  // Get doctors based on selected problem
+  const getFilteredDoctors = () => {
+    if (!formData.problem) return [];
+    const selectedProblem = problems.find(p => p.id === formData.problem);
+    return doctors.filter(doctor => doctor.specialization === selectedProblem.specialization);
+  };
+
+  const handleProblemSelect = (problemId) => {
+    setFormData({
+      ...formData,
+      problem: problemId,
+      doctorId: "" // Reset doctor selection when problem changes
+    });
+    setCurrentStage(2);
+  };
+
+  const handleDoctorSelect = (doctorName) => {
+    // Find the doctor object to get the ID
+    const selectedDoctor = doctors.find(doctor => doctor.name === doctorName);
+    setFormData({
+      ...formData,
+      doctorId: selectedDoctor ? selectedDoctor.id : doctorName
+    });
+    setCurrentStage(3);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      // Convert appointmentTime to startTime and endTime
+      const startTime = formData.appointmentTime;
+      const endTime = formData.appointmentTime.split(':').map((part, index) => {
+        if (index === 0) {
+          const hour = parseInt(part) + 1;
+          return hour.toString().padStart(2, '0');
+        }
+        return part;
+      }).join(':');
+      
+      await api.post("/appointments/book", {
+        doctorId: formData.doctorId,
+        appointmentDate: formData.appointmentDate,
+        startTime: startTime,
+        endTime: endTime,
+        reason: formData.reason
+      });
+      
+      setSuccess(true);
+      setFormData({ problem: "", doctorId: "", appointmentDate: "", appointmentTime: "", reason: "" });
+      setCurrentStage(1);
+      reload();
+      
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (error) {
+      console.error("Error booking appointment:", error);
+      alert("Failed to book appointment. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const goBack = () => {
+    if (currentStage > 1) {
+      setCurrentStage(currentStage - 1);
+    }
+  };
+
+  return (
+    <div className="book-appointment-container">
+      <h1 className="page-title">📅 Book New Appointment</h1>
+      
+      {success && (
+        <div className="success-alert">
+          <span className="success-icon">✅</span>
+          <span>Appointment booked successfully!</span>
+        </div>
+      )}
+
+      {/* Progress Indicator */}
+      <div className="progress-indicator">
+        <div className={`progress-step ${currentStage >= 1 ? 'active' : ''}`}>
+          <span className="step-number">1</span>
+          <span className="step-label">Select Problem</span>
+        </div>
+        <div className={`progress-step ${currentStage >= 2 ? 'active' : ''}`}>
+          <span className="step-number">2</span>
+          <span className="step-label">Choose Doctor</span>
+        </div>
+        <div className={`progress-step ${currentStage >= 3 ? 'active' : ''}`}>
+          <span className="step-number">3</span>
+          <span className="step-label">Schedule</span>
+        </div>
+      </div>
+
+      <div className="booking-form-card">
+        {/* Stage 1: Select Problem */}
+        {currentStage === 1 && (
+          <div className="stage-container">
+            <h2>What's your main concern?</h2>
+            <p className="stage-description">Select the problem that best describes your symptoms</p>
+            
+            <div className="problems-grid">
+              {problems.map(problem => (
+                <button
+                  key={problem.id}
+                  className="problem-card"
+                  onClick={() => handleProblemSelect(problem.id)}
+                >
+                  <span className="problem-icon">{problem.icon}</span>
+                  <span className="problem-name">{problem.name}</span>
+                  <span className="problem-specialization">{problem.specialization}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Stage 2: Select Doctor */}
+        {currentStage === 2 && (
+          <div className="stage-container">
+            <div className="stage-header">
+              <button className="back-btn" onClick={goBack}>← Back</button>
+              <h2>Choose Your Doctor</h2>
+            </div>
+            <p className="stage-description">
+              Select from our specialists in {problems.find(p => p.id === formData.problem)?.specialization}
+            </p>
+            
+            <div className="doctors-selection">
+              {getFilteredDoctors().map(doctor => (
+                <button
+                  key={doctor.name}
+                  className={`doctor-selection-card ${formData.doctorId === doctor.name ? 'selected' : ''}`}
+                  onClick={() => handleDoctorSelect(doctor.name)}
+                >
+                  <div className="doctor-avatar-small">
+                    {doctor.name.split(' ').map(n => n[0]).join('')}
+                  </div>
+                  <div className="doctor-info-small">
+                    <h3>{doctor.name}</h3>
+                    <p>{doctor.specialization}</p>
+                    <p className="doctor-contact">📞 {doctor.contact}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+            
+            {getFilteredDoctors().length === 0 && (
+              <div className="no-doctors">
+                <p>No doctors available for this specialization. Please try a different problem.</p>
+                <button className="btn-secondary" onClick={() => setCurrentStage(1)}>
+                  Choose Different Problem
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Stage 3: Schedule Appointment */}
+        {currentStage === 3 && (
+          <div className="stage-container">
+            <div className="stage-header">
+              <button className="back-btn" onClick={goBack}>← Back</button>
+              <h2>Schedule Your Appointment</h2>
+            </div>
+            
+            <div className="selected-doctor-info">
+              <h3>Selected Doctor: {doctors.find(d => d.id === formData.doctorId)?.name || formData.doctorId}</h3>
+              <p>Specialization: {problems.find(p => p.id === formData.problem)?.specialization}</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="booking-form">
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="appointmentDate">Appointment Date</label>
+                  <input
+                    type="date"
+                    id="appointmentDate"
+                    name="appointmentDate"
+                    value={formData.appointmentDate}
+                    onChange={handleChange}
+                    min={new Date().toISOString().split('T')[0]}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="appointmentTime">Appointment Time</label>
+                  <select
+                    id="appointmentTime"
+                    name="appointmentTime"
+                    value={formData.appointmentTime}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">Select time</option>
+                    <option value="09:00">9:00 AM</option>
+                    <option value="10:00">10:00 AM</option>
+                    <option value="11:00">11:00 AM</option>
+                    <option value="12:00">12:00 PM</option>
+                    <option value="14:00">2:00 PM</option>
+                    <option value="15:00">3:00 PM</option>
+                    <option value="16:00">4:00 PM</option>
+                    <option value="17:00">5:00 PM</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="reason">Additional Notes (Optional)</label>
+                <textarea
+                  id="reason"
+                  name="reason"
+                  value={formData.reason}
+                  onChange={handleChange}
+                  placeholder="Any additional information about your symptoms or concerns"
+                  rows="3"
+                />
+              </div>
+
+              <button type="submit" className="book-appointment-btn" disabled={loading}>
+                {loading ? "Booking..." : "Confirm Appointment"}
+              </button>
+            </form>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

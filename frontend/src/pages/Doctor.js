@@ -95,7 +95,7 @@ function Sidebar({ currentView, setCurrentView, logout, doctorName }) {
       <div className="sidebar-header">
         <div className="logo">
           <span className="logo-icon">🏥</span>
-          <span className="logo-text">TEAM UTPA</span>
+          <span className="logo-text">MediCare</span>
         </div>
       </div>
 
