@@ -852,6 +852,54 @@ body {
   margin: 0 0 8px 0;
 }
 
+.doctor-card-full {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.doctor-card-full:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.doctor-info-full {
+  flex: 1;
+}
+
+.doctor-info-full h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 8px 0;
+}
+
+.specialization-label {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 12px 0;
+}
+
+.doctor-contact-info {
+  display: flex;
+  gap: 20px;
+}
+
+.doctor-contact-info p {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.my-doctors-container {
+  max-width: 1200px;
+}
+
 .doctor-specialization {
   font-size: 14px;
   color: #6b7280;
@@ -1594,6 +1642,99 @@ body {
   }
   
   .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ========== PATIENT REGISTRATION ========== */
+.patient-registration-container {
+  padding: 24px;
+}
+
+.registration-form-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+}
+
+.registration-form {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.registration-form .form-group {
+  margin-bottom: 24px;
+}
+
+.registration-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.registration-form label {
+  display: block;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.registration-form input,
+.registration-form select,
+.registration-form textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  background: #ffffff;
+}
+
+.registration-form input:focus,
+.registration-form select:focus,
+.registration-form textarea:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.registration-form textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.register-patient-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  margin-top: 24px;
+}
+
+.register-patient-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+}
+
+.register-patient-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (max-width: 768px) {
+  .registration-form .form-row {
     grid-template-columns: 1fr;
   }
 }

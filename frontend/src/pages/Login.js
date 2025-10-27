@@ -133,9 +133,9 @@ export default function Login() {
 
               <div className="demo-credentials-simple">
                 <p><strong>Demo:</strong></p>
-                {selectedRole === "patient" && <p>patient@example.com / patient123</p>}
-                {selectedRole === "doctor" && <p>doctor@example.com / doctor123</p>}
-                {selectedRole === "admin" && <p>admin@example.com / admin123</p>}
+                {selectedRole === "patient" && <p>john.doe@email.com / password123</p>}
+                {selectedRole === "doctor" && <p>sarah.johnson@hospital.com / password123</p>}
+                {selectedRole === "admin" && <p>admin@hospital.com / password123</p>}
               </div>
             </form>
           </div>

@@ -50,7 +50,7 @@ exports.book = async (req, res) => {
     const patientIdFromToken = req.user?.id;
     if (!patientIdFromToken) return res.status(401).json({ success: false, message: 'Unauthorized' });
 
-    const { doctorId, appointmentDate, startTime, endTime, reason } = req.body;
+    const { doctorId, appointmentDate, startTime, endTime, reason, status } = req.body;
 
     const result = await appointmentService.book({
       PatientID: patientIdFromToken,
@@ -59,6 +59,7 @@ exports.book = async (req, res) => {
       StartTime: startTime,                   // 'HH:MM:SS'
       EndTime: endTime,                       // 'HH:MM:SS'
       Reason: reason || null,
+      Status: status || 'Scheduled',
     });
 
     if (!result.success) return res.status(409).json(result);
@@ -70,16 +71,24 @@ exports.book = async (req, res) => {
 };
 
 
-exports.doctorMy = (req, res) => {
-  appointmentService.listForDoctor(req.user.id, (err, rows) => {
-    if (err) return res.status(err.status).json({ message: err.message });
+exports.doctorMy = async (req, res) => {
+  try {
+    console.log('Doctor fetching appointments, DoctorID:', req.user.id);
+    const rows = await appointmentService.myForDoctor(req.user.id);
+    console.log('Appointments found:', rows.length);
     res.json(rows);
-  });
+  } catch (err) {
+    console.error('doctorMy:', err);
+    res.status(500).json({ message: err.message || 'Failed to fetch appointments' });
+  }
 };
 
-exports.patientMy = (req, res) => {
-  appointmentService.listForPatient(req.user.id, (err, rows) => {
-    if (err) return res.status(err.status).json({ message: err.message });
+exports.patientMy = async (req, res) => {
+  try {
+    const rows = await appointmentService.myForPatient(req.user.id);
     res.json(rows);
-  });
+  } catch (err) {
+    console.error('patientMy:', err);
+    res.status(500).json({ message: err.message || 'Failed to fetch appointments' });
+  }
 };

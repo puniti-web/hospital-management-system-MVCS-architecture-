@@ -471,15 +471,21 @@ function AllAppointments({ appointments }) {
 
 // ========== WARD MANAGEMENT VIEW ==========
 function WardManagement({ wards, reload }) {
+  const [showAddForm, setShowAddForm] = useState(false);
   const [showAssignForm, setShowAssignForm] = useState(false);
 
   return (
     <div className="wards-container">
       <div className="page-header">
         <h1 className="page-title">🏥 Ward Management</h1>
-        <button className="primary-btn" onClick={() => setShowAssignForm(true)}>
-          ➕ Assign Patient to Ward
-        </button>
+        <div className="header-actions">
+          <button className="secondary-btn" onClick={() => setShowAddForm(true)}>
+            ➕ Add New Ward
+          </button>
+          <button className="primary-btn" onClick={() => setShowAssignForm(true)}>
+            👤 Assign Doctor to Ward
+          </button>
+        </div>
       </div>
 
       <div className="wards-grid">
@@ -510,7 +516,7 @@ function WardManagement({ wards, reload }) {
                   </span>
                 </div>
                 <div className="info-row">
-                  <span className="info-label">Assigned Doctor:</span>
+                  <span className="info-label">Assigned Doctor ID:</span>
                   <span className="info-value">
                     {ward.AssignedDoctor || "None"}
                   </span>
@@ -522,6 +528,9 @@ function WardManagement({ wards, reload }) {
         })}
       </div>
 
+      {showAddForm && (
+        <AddWardModal onClose={() => setShowAddForm(false)} reload={reload} />
+      )}
       {showAssignForm && (
         <AssignWardModal onClose={() => setShowAssignForm(false)} reload={reload} />
       )}
@@ -585,21 +594,114 @@ function AddDoctorModal({ onClose }) {
   );
 }
 
+function AddWardModal({ onClose, reload }) {
+  const [formData, setFormData] = useState({
+    wardName: "",
+    capacity: "",
+    assignedDoctor: ""
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      await api.post("/wards", {
+        wardName: formData.wardName,
+        capacity: parseInt(formData.capacity),
+        assignedDoctor: formData.assignedDoctor ? parseInt(formData.assignedDoctor) : null
+      });
+      
+      reload();
+      onClose();
+    } catch (error) {
+      console.error("Error adding ward:", error);
+      alert(error?.response?.data?.message || "Failed to add ward. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal">
+        <div className="modal-header">
+          <h3>Add New Ward</h3>
+          <button className="close-btn" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label htmlFor="wardName">Ward Name *</label>
+              <input
+                type="text"
+                id="wardName"
+                name="wardName"
+                value={formData.wardName}
+                onChange={handleChange}
+                placeholder="Enter ward name"
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="capacity">Capacity *</label>
+              <input
+                type="number"
+                id="capacity"
+                name="capacity"
+                value={formData.capacity}
+                onChange={handleChange}
+                placeholder="Enter bed capacity"
+                min="1"
+                max="100"
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="assignedDoctor">Assigned Doctor ID (Optional)</label>
+              <input
+                type="number"
+                id="assignedDoctor"
+                name="assignedDoctor"
+                value={formData.assignedDoctor}
+                onChange={handleChange}
+                placeholder="Enter doctor ID"
+                min="1"
+              />
+            </div>
+            
+            <button type="submit" className="primary-btn" disabled={loading}>
+              {loading ? "Adding..." : "Add Ward"}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AssignWardModal({ onClose }) {
   return (
     <div className="modal-overlay">
       <div className="modal">
-        <h2>Assign Patient to Ward</h2>
-        <form>
-          <input type="text" placeholder="Patient Name" />
-          <input type="text" placeholder="Ward ID" />
-          <button type="submit" className="primary-btn">
-            Assign
-          </button>
-        </form>
-        <button className="secondary-btn" onClick={onClose}>
-          Close
-        </button>
+        <div className="modal-header">
+          <h3>Assign Doctor to Ward</h3>
+          <button className="close-btn" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <p>Doctor assignment functionality will be implemented here.</p>
+          <p>This will allow assigning doctors to specific wards for better management.</p>
+        </div>
       </div>
     </div>
   );

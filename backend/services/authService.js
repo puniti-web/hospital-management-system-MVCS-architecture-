@@ -23,13 +23,15 @@ exports.registerDoctor = (data, cb) => {
   });
 };
 
-exports.login = ({ role, emailOrContact, password }, cb) => {
+exports.login = async ({ role, emailOrContact, password }, cb) => {
   if (!role || !emailOrContact || !password) return cb({ status: 400, message: "Missing fields" });
-  const model = role === "doctor" ? doctorModel : patientModel;
-  const idCol = role === "doctor" ? "DoctorID" : "PatientID";
+  
+  // Admin uses doctor model
+  const model = (role === "doctor" || role === "admin") ? doctorModel : patientModel;
+  const idCol = (role === "doctor" || role === "admin") ? "DoctorID" : "PatientID";
 
-  model.findByEmailOrContact(emailOrContact, async (err, rows) => {
-    if (err) return cb({ status: 500, message: err.message });
+  try {
+    const rows = await model.findByEmailOrContact(emailOrContact);
     if (!rows.length) return cb({ status: 404, message: "User not found" });
 
     const user = rows[0];
@@ -38,5 +40,7 @@ exports.login = ({ role, emailOrContact, password }, cb) => {
 
     const token = signToken({ id: user[idCol], role });
     cb(null, { token, id: user[idCol], role, name: user.Name });
-  });
+  } catch (err) {
+    return cb({ status: 500, message: err.message });
+  }
 };
