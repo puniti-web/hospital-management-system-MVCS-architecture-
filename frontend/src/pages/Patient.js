@@ -11,6 +11,7 @@ export default function PatientDashboard() {
   const [currentView, setCurrentView] = useState("dashboard");
   const [appointments, setAppointments] = useState([]);
   const [doctors, setDoctors] = useState([]);
+  const [medicines, setMedicines] = useState([]);
   const [bills, setBills] = useState([]);
   const [loading, setLoading] = useState(true);
   const [patientName, setPatientName] = useState("Patient");
@@ -19,7 +20,6 @@ export default function PatientDashboard() {
     const name = localStorage.getItem("userName") || "Patient";
     setPatientName(name);
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadData = async () => {
@@ -37,6 +37,16 @@ export default function PatientDashboard() {
         setBills(billsRaw);
       } catch {
         console.log("Billing API not available");
+      }
+
+      // --- Medicines
+      try {
+        const medicinesRes = await api.get("/medicines");
+        const medicinesData = medicinesRes?.data?.data ?? medicinesRes?.data ?? [];
+        setMedicines(medicinesData);
+      } catch {
+        console.log("Medicines API error");
+        setMedicines([]);
       }
 
       // --- Doctors
@@ -135,8 +145,9 @@ export default function PatientDashboard() {
               {currentView === "patient-registration" && (
                 <PatientRegistration />
               )}
-              {currentView === "doctors" && <Doctors doctors={doctors} />}
-              {currentView === "billing" && <Billing bills={bills} />}
+              {currentView === "doctors" && <MyDoctors appointments={appointments} />}
+              {currentView === "inventory" && <MedicinesInventory medicines={medicines} />}
+              {currentView === "billing" && <Billing bills={bills} medicines={medicines} />}
               {currentView === "records" && (
                 <MedicalRecords appointments={appointments} />
               )}
@@ -156,6 +167,7 @@ function Sidebar({ currentView, setCurrentView, logout, patientName }) {
     { id: "book-appointment", icon: "➕", label: "Book Appointment" },
     { id: "patient-registration", icon: "👤", label: "Patient Registration" },
     { id: "doctors", icon: "👨‍⚕", label: "My Doctors" },
+    { id: "inventory", icon: "💊", label: "Medicines" },
     { id: "records", icon: "📋", label: "Medical Records" },
     { id: "billing", icon: "💳", label: "Billing" },
   ];
@@ -283,12 +295,126 @@ function Overview({ appointments, bills }) {
   );
 }
 
+/* ===================== Medicines Inventory ===================== */
+function MedicinesInventory({ medicines }) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filter, setFilter] = useState("all");
+
+  const categories = ["all", ...new Set(medicines.map(m => m.Category))];
+
+  const filtered = medicines.filter((med) => {
+    const matchesSearch = 
+      (med.Name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (med.Category?.toLowerCase() || "").includes(searchTerm.toLowerCase());
+    const matchesFilter = filter === "all" || med.Category === filter;
+    return matchesSearch && matchesFilter;
+  });
+
+  const formatCurrency = (amount) => `₹${Number(amount).toFixed(2)}`;
+
+  return (
+    <div className="medicines-container">
+      <h1 className="page-title">💊 Medicine Inventory</h1>
+
+      <div className="filters-bar">
+        <div className="filter-tabs">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              className={`filter-tab ${filter === cat ? "active" : ""}`}
+              onClick={() => setFilter(cat)}
+            >
+              {cat === "all" ? "All" : cat}
+            </button>
+          ))}
+        </div>
+        <div className="search-box">
+          <span className="search-icon">🔍</span>
+          <input
+            type="text"
+            placeholder="Search medicines..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-header">
+          <h2>Medicine List</h2>
+          <span className="badge-count">{filtered.length} medicines</span>
+        </div>
+        <div className="card-body no-padding">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Manufacturer</th>
+                <th>Price</th>
+                <th>Stock</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((med) => (
+                <tr key={med.MedicineID}>
+                  <td><strong>{med.Name}</strong></td>
+                  <td>{med.Category}</td>
+                  <td>{med.Manufacturer}</td>
+                  <td>{formatCurrency(med.Price)}</td>
+                  <td>
+                    <span className={`status-badge ${med.Stock > 50 ? 'active' : 'pending'}`}>
+                      {med.Stock} units
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="stats-grid" style={{ marginTop: '24px', gridTemplateColumns: 'repeat(3, 1fr)' }}>
+        <div className="stat-card" style={{ borderLeftColor: '#10b981' }}>
+          <div className="stat-icon" style={{ background: '#10b98115' }}>💊</div>
+          <div className="stat-content">
+            <div className="stat-title">Total Medicines</div>
+            <div className="stat-value">{medicines.length}</div>
+          </div>
+        </div>
+        <div className="stat-card" style={{ borderLeftColor: '#3b82f6' }}>
+          <div className="stat-icon" style={{ background: '#3b82f615' }}>📦</div>
+          <div className="stat-content">
+            <div className="stat-title">Categories</div>
+            <div className="stat-value">{categories.length - 1}</div>
+          </div>
+        </div>
+        <div className="stat-card" style={{ borderLeftColor: '#f59e0b' }}>
+          <div className="stat-icon" style={{ background: '#f59e0b15' }}>💰</div>
+          <div className="stat-content">
+            <div className="stat-title">Avg Price</div>
+            <div className="stat-value">
+              ₹{medicines.length > 0 ? (medicines.reduce((sum, m) => sum + Number(m.Price), 0) / medicines.length).toFixed(0) : '0'}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ===================== Billing ===================== */
-function Billing({ bills }) {
+function Billing({ bills, medicines }) {
   const totalAmount = bills.reduce((sum, bill) => sum + (bill.Amount || 0), 0);
   const pendingAmount = bills
     .filter((b) => b.PaymentStatus === "Pending")
     .reduce((sum, b) => sum + (b.Amount || 0), 0);
+
+  // Calculate medicine costs based on appointments
+  const medicineTotal = medicines.length > 0 
+    ? medicines.reduce((sum, med) => sum + Number(med.Price), 0) * 0.3 
+    : 0;
+  const grandTotal = totalAmount + medicineTotal;
 
   return (
     <div className="billing-container">
@@ -296,12 +422,16 @@ function Billing({ bills }) {
 
       <div className="billing-stats">
         <div className="billing-stat-card">
-          <span className="billing-stat-label">Total Amount</span>
+          <span className="billing-stat-label">Consultation Fees</span>
           <span className="billing-stat-value">₹{totalAmount}</span>
         </div>
+        <div className="billing-stat-card">
+          <span className="billing-stat-label">Medicine Costs</span>
+          <span className="billing-stat-value">₹{medicineTotal.toFixed(2)}</span>
+        </div>
         <div className="billing-stat-card pending">
-          <span className="billing-stat-label">Pending Amount</span>
-          <span className="billing-stat-value">₹{pendingAmount}</span>
+          <span className="billing-stat-label">Total Due</span>
+          <span className="billing-stat-value">₹{grandTotal.toFixed(2)}</span>
         </div>
       </div>
 
@@ -340,6 +470,64 @@ function Billing({ bills }) {
                 ))}
               </tbody>
             </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ===================== My Doctors ===================== */
+function MyDoctors({ appointments }) {
+  // Extract unique doctors from appointments
+  const myDoctors = appointments
+    .filter(apt => apt.DoctorName && apt.Specialization)
+    .reduce((acc, apt) => {
+      if (!acc.find(d => d.name === apt.DoctorName)) {
+        acc.push({
+          id: apt.DoctorID || Math.random(),
+          name: apt.DoctorName,
+          specialization: apt.Specialization,
+          contact: apt.DoctorContact || "N/A",
+          email: apt.DoctorEmail || "N/A"
+        });
+      }
+      return acc;
+    }, []);
+
+  return (
+    <div className="my-doctors-container">
+      <h1 className="page-title">👨‍⚕️ My Doctors</h1>
+
+      <div className="card">
+        <div className="card-header">
+          <h2>Doctors I've Visited</h2>
+          <span className="badge-count">{myDoctors.length} doctors</span>
+        </div>
+        <div className="card-body">
+          {myDoctors.length === 0 ? (
+            <div className="empty-state">
+              <span className="empty-icon">👨‍⚕️</span>
+              <p>No doctors yet. Book an appointment to see your doctors here!</p>
+            </div>
+          ) : (
+            <div className="doctors-grid">
+              {myDoctors.map((doctor) => (
+                <div key={doctor.id} className="doctor-card-full">
+                  <div className="doctor-avatar-large">
+                    {doctor.name.split(" ").map((n) => n[0]).join("")}
+                  </div>
+                  <div className="doctor-info-full">
+                    <h3>{doctor.name}</h3>
+                    <p className="specialization-label">{doctor.specialization}</p>
+                    <div className="doctor-contact-info">
+                      <p>📞 {doctor.contact}</p>
+                      <p>✉️ {doctor.email}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>

@@ -71,16 +71,24 @@ exports.book = async (req, res) => {
 };
 
 
-exports.doctorMy = (req, res) => {
-  appointmentService.listForDoctor(req.user.id, (err, rows) => {
-    if (err) return res.status(err.status).json({ message: err.message });
+exports.doctorMy = async (req, res) => {
+  try {
+    console.log('Doctor fetching appointments, DoctorID:', req.user.id);
+    const rows = await appointmentService.myForDoctor(req.user.id);
+    console.log('Appointments found:', rows.length);
     res.json(rows);
-  });
+  } catch (err) {
+    console.error('doctorMy:', err);
+    res.status(500).json({ message: err.message || 'Failed to fetch appointments' });
+  }
 };
 
-exports.patientMy = (req, res) => {
-  appointmentService.listForPatient(req.user.id, (err, rows) => {
-    if (err) return res.status(err.status).json({ message: err.message });
+exports.patientMy = async (req, res) => {
+  try {
+    const rows = await appointmentService.myForPatient(req.user.id);
     res.json(rows);
-  });
+  } catch (err) {
+    console.error('patientMy:', err);
+    res.status(500).json({ message: err.message || 'Failed to fetch appointments' });
+  }
 };

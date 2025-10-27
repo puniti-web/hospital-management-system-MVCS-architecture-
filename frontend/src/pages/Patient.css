@@ -852,6 +852,54 @@ body {
   margin: 0 0 8px 0;
 }
 
+.doctor-card-full {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.doctor-card-full:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.doctor-info-full {
+  flex: 1;
+}
+
+.doctor-info-full h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 8px 0;
+}
+
+.specialization-label {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 12px 0;
+}
+
+.doctor-contact-info {
+  display: flex;
+  gap: 20px;
+}
+
+.doctor-contact-info p {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.my-doctors-container {
+  max-width: 1200px;
+}
+
 .doctor-specialization {
   font-size: 14px;
   color: #6b7280;

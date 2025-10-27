@@ -72,7 +72,11 @@ export default function DoctorDashboard() {
               {currentView === "appointments" && (
                 <Appointments appointments={appointments} reload={loadData} />
               )}
+              {currentView === "medical-records" && (
+                <MedicalRecords appointments={appointments} />
+              )}
               {currentView === "wards" && <Wards wards={wards} />}
+              {currentView === "profile" && <Profile />}
             </>
           )}
         </div>
@@ -87,7 +91,9 @@ function Sidebar({ currentView, setCurrentView, logout, doctorName }) {
     { id: "dashboard", icon: "📊", label: "Dashboard" },
     { id: "patients", icon: "👥", label: "Patients" },
     { id: "appointments", icon: "📅", label: "Appointments" },
+    { id: "medical-records", icon: "📋", label: "Medical Records" },
     { id: "wards", icon: "🏥", label: "Wards" },
+    { id: "profile", icon: "⚙️", label: "Profile" },
   ];
 
   return (
@@ -413,6 +419,337 @@ function Wards({ wards }) {
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+// ========== MEDICAL RECORDS ==========
+function MedicalRecords({ appointments }) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedRecord, setSelectedRecord] = useState(null);
+
+  const records = appointments
+    .filter((apt) => apt.Status === "Completed" || apt.Status === "Confirmed")
+    .map((apt) => ({
+      recordId: apt.AppointmentID,
+      patientName: apt.PatientName,
+      date: apt.AppointmentDate,
+      reason: apt.Reason || "General Checkup",
+      status: apt.Status,
+      diagnosis: "Follow-up examination scheduled",
+      prescription: apt.Reason?.toLowerCase().includes("fever") 
+        ? "Paracetamol 500mg, 3 times daily" 
+        : "Routine medication as discussed"
+    }));
+
+  const filteredRecords = records.filter((record) =>
+    record.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    record.reason.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="medical-records-container">
+      <div className="page-header">
+        <h1 className="page-title">📋 Medical Records</h1>
+        <div className="search-box">
+          <span className="search-icon">🔍</span>
+          <input
+            type="text"
+            placeholder="Search records..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-header">
+          <h2>Patient Records</h2>
+          <span className="badge-count">{filteredRecords.length} records</span>
+        </div>
+        <div className="card-body no-padding">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Patient</th>
+                <th>Date</th>
+                <th>Reason</th>
+                <th>Diagnosis</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRecords.map((record) => (
+                <tr key={record.recordId}>
+                  <td>{record.patientName}</td>
+                  <td>{formatDate(record.date)}</td>
+                  <td>{record.reason}</td>
+                  <td>{record.diagnosis}</td>
+                  <td>
+                    <button
+                      className="btn-small"
+                      onClick={() => setSelectedRecord(record)}
+                    >
+                      View Details
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {selectedRecord && (
+        <RecordModal
+          record={selectedRecord}
+          onClose={() => setSelectedRecord(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// Record Detail Modal
+function RecordModal({ record, onClose }) {
+  return (
+    <div className="modal-overlay">
+      <div className="modal">
+        <div className="modal-header">
+          <h2>📋 Medical Record Details</h2>
+          <button className="close-btn" onClick={onClose}>×</button>
+        </div>
+        <div className="modal-body">
+          <div className="detail-section">
+            <h3>Patient Information</h3>
+            <div className="info-grid">
+              <div>
+                <label>Patient Name:</label>
+                <span>{record.patientName}</span>
+              </div>
+              <div>
+                <label>Date:</label>
+                <span>{formatDate(record.date)}</span>
+              </div>
+            </div>
+          </div>
+          <div className="detail-section">
+            <h3>Visit Information</h3>
+            <div className="info-grid">
+              <div>
+                <label>Reason:</label>
+                <span>{record.reason}</span>
+              </div>
+              <div>
+                <label>Status:</label>
+                <span className={`status-badge ${record.status.toLowerCase()}`}>
+                  {record.status}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="detail-section">
+            <h3>Medical Details</h3>
+            <div className="info-text">
+              <label>Diagnosis:</label>
+              <p>{record.diagnosis}</p>
+            </div>
+            <div className="info-text">
+              <label>Prescription:</label>
+              <p>{record.prescription}</p>
+            </div>
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="btn-secondary" onClick={onClose}>
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ========== PROFILE ==========
+function Profile() {
+  const userName = localStorage.getItem("userName") || "Doctor";
+  const [editMode, setEditMode] = useState(false);
+  const [profileData, setProfileData] = useState({
+    name: userName,
+    specialization: "General Medicine",
+    email: "doctor@hospital.com",
+    contact: "9876543210",
+    experience: "5 years",
+    hospital: "MediCare Hospital"
+  });
+
+  const handleSave = () => {
+    // In a real app, this would update the profile via API
+    console.log("Saving profile:", profileData);
+    setEditMode(false);
+    alert("Profile updated successfully!");
+  };
+
+  const handleChange = (e) => {
+    setProfileData({
+      ...profileData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  return (
+    <div className="profile-container">
+      <h1 className="page-title">⚙️ My Profile</h1>
+
+      <div className="card">
+        <div className="profile-header">
+          <div className="profile-avatar-large">
+            {profileData.name.charAt(0).toUpperCase()}
+          </div>
+          <div className="profile-title">
+            <h2>{profileData.name}</h2>
+            <p>{profileData.specialization}</p>
+          </div>
+          {!editMode && (
+            <button className="primary-btn" onClick={() => setEditMode(true)}>
+              ✏️ Edit Profile
+            </button>
+          )}
+        </div>
+
+        <div className="profile-body">
+          <div className="profile-info">
+            <div className="info-row">
+              <label>Name:</label>
+              {editMode ? (
+                <input
+                  type="text"
+                  name="name"
+                  value={profileData.name}
+                  onChange={handleChange}
+                  className="input-field"
+                />
+              ) : (
+                <span>{profileData.name}</span>
+              )}
+            </div>
+
+            <div className="info-row">
+              <label>Specialization:</label>
+              {editMode ? (
+                <select
+                  name="specialization"
+                  value={profileData.specialization}
+                  onChange={handleChange}
+                  className="input-field"
+                >
+                  <option>General Medicine</option>
+                  <option>Cardiology</option>
+                  <option>Neurology</option>
+                  <option>Orthopedics</option>
+                  <option>Dermatology</option>
+                  <option>Pediatrics</option>
+                </select>
+              ) : (
+                <span>{profileData.specialization}</span>
+              )}
+            </div>
+
+            <div className="info-row">
+              <label>Email:</label>
+              {editMode ? (
+                <input
+                  type="email"
+                  name="email"
+                  value={profileData.email}
+                  onChange={handleChange}
+                  className="input-field"
+                />
+              ) : (
+                <span>{profileData.email}</span>
+              )}
+            </div>
+
+            <div className="info-row">
+              <label>Contact:</label>
+              {editMode ? (
+                <input
+                  type="text"
+                  name="contact"
+                  value={profileData.contact}
+                  onChange={handleChange}
+                  className="input-field"
+                />
+              ) : (
+                <span>{profileData.contact}</span>
+              )}
+            </div>
+
+            <div className="info-row">
+              <label>Experience:</label>
+              {editMode ? (
+                <input
+                  type="text"
+                  name="experience"
+                  value={profileData.experience}
+                  onChange={handleChange}
+                  className="input-field"
+                />
+              ) : (
+                <span>{profileData.experience}</span>
+              )}
+            </div>
+
+            <div className="info-row">
+              <label>Hospital:</label>
+              {editMode ? (
+                <input
+                  type="text"
+                  name="hospital"
+                  value={profileData.hospital}
+                  onChange={handleChange}
+                  className="input-field"
+                />
+              ) : (
+                <span>{profileData.hospital}</span>
+              )}
+            </div>
+          </div>
+
+          {editMode && (
+            <div className="profile-actions">
+              <button className="btn-secondary" onClick={() => setEditMode(false)}>
+                Cancel
+              </button>
+              <button className="btn-primary" onClick={handleSave}>
+                Save Changes
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-header">
+          <h2>📊 Statistics</h2>
+        </div>
+        <div className="card-body">
+          <div className="stats-mini">
+            <div className="stat-mini">
+              <div className="stat-mini-label">Total Patients</div>
+              <div className="stat-mini-value">150</div>
+            </div>
+            <div className="stat-mini">
+              <div className="stat-mini-label">Appointments</div>
+              <div className="stat-mini-value">45</div>
+            </div>
+            <div className="stat-mini">
+              <div className="stat-mini-label">Success Rate</div>
+              <div className="stat-mini-value">98%</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

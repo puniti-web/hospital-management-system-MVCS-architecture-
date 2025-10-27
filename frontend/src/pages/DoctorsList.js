@@ -19,22 +19,24 @@ export default function DoctorsList() {
   const loadDoctors = async () => {
     setLoading(true);
     try {
-      // For now, using sample data. Replace with actual API call when backend is ready
-      const sampleDoctors = [
-        { id: 1, name: "Dr. Sarah Johnson", specialization: "Cardiology", contact: "9876543210", email: "sarah.johnson@hospital.com" },
-        { id: 2, name: "Dr. Michael Chen", specialization: "Neurology", contact: "9876543211", email: "michael.chen@hospital.com" },
-        { id: 3, name: "Dr. Emily Rodriguez", specialization: "Orthopedics", contact: "9876543212", email: "emily.rodriguez@hospital.com" },
-        { id: 4, name: "Dr. James Wilson", specialization: "Dermatology", contact: "9876543213", email: "james.wilson@hospital.com" },
-        { id: 5, name: "Dr. Priya Sharma", specialization: "Pediatrics", contact: "9876543214", email: "priya.sharma@hospital.com" },
-        { id: 6, name: "Dr. Robert Brown", specialization: "General", contact: "9876543215", email: "robert.brown@hospital.com" },
-        { id: 7, name: "Dr. Lisa Anderson", specialization: "Cardiology", contact: "9876543216", email: "lisa.anderson@hospital.com" },
-        { id: 8, name: "Dr. David Kumar", specialization: "Neurology", contact: "9876543217", email: "david.kumar@hospital.com" },
-        { id: 9, name: "Dr. Maria Garcia", specialization: "Orthopedics", contact: "9876543218", email: "maria.garcia@hospital.com" },
-        { id: 10, name: "Dr. John Smith", specialization: "General", contact: "9876543219", email: "john.smith@hospital.com" }
-      ];
-      setDoctors(sampleDoctors);
+      // Fetch doctors from the API
+      const response = await api.get("/doctors");
+      const doctorsData = response.data.data || response.data;
+      
+      // Map the database structure to frontend expectations
+      const formattedDoctors = doctorsData.map(doctor => ({
+        id: doctor.DoctorID,
+        name: doctor.Name,
+        specialization: doctor.Specialization,
+        contact: doctor.Contact,
+        email: doctor.Email
+      }));
+      
+      setDoctors(formattedDoctors);
     } catch (error) {
       console.error("Error loading doctors:", error);
+      // Fallback to empty array on error
+      setDoctors([]);
     } finally {
       setLoading(false);
     }
