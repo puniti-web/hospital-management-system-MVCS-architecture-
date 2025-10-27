@@ -315,9 +315,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 This project is licensed under the MIT License.
 
 ## 👨‍💻 Author
+**Puniti Jodhwani**
 **Pari Garg**
-- GitHub: [@PariGarg10](https://github.com/PariGarg10)
 
----
-
-Made with ❤️ using React, Node.js, and MySQL
