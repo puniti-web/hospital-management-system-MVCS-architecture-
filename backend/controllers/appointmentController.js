@@ -92,3 +92,15 @@ exports.patientMy = async (req, res) => {
     res.status(500).json({ message: err.message || 'Failed to fetch appointments' });
   }
 };
+
+exports.reject = async (req, res) => {
+  try {
+    const { id } = req.params; // appointment id
+    const result = await appointmentService.doctorReject({ AppointmentID: Number(id), DoctorID: req.user.id });
+    if (!result.success) return res.status(result.status || 400).json({ success: false, message: result.message });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('reject:', err);
+    res.status(500).json({ success: false, message: 'Failed to reject appointment' });
+  }
+};

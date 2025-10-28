@@ -56,6 +56,27 @@ const appointmentModel = {
       db.query(sql, params, (err, rows) => err ? reject(err) : resolve(rows));
     }),
 
+  // Check for overlaps for same patient, same date (prevents double-booking)
+  findOverlapForPatient: ({ PatientID, AppointmentDate, StartTime, EndTime }) =>
+    new Promise((resolve, reject) => {
+      const sql = `
+        SELECT AppointmentID
+        FROM Appointment
+        WHERE PatientID = ?
+          AND AppointmentDate = ?
+          AND (
+            (StartTime < ? AND EndTime > ?)
+            OR
+            (StartTime >= ? AND StartTime < ?)
+          )`;
+      const params = [
+        PatientID, AppointmentDate,
+        EndTime, StartTime,
+        StartTime, EndTime
+      ];
+      db.query(sql, params, (err, rows) => err ? reject(err) : resolve(rows));
+    }),
+
   create: ({ PatientID, DoctorID, AppointmentDate, StartTime, EndTime, Reason, Status }) =>
     new Promise((resolve, reject) => {
       const sql = `
@@ -86,6 +107,20 @@ const appointmentModel = {
         WHERE a.PatientID = ?
         ORDER BY a.AppointmentDate DESC, a.StartTime DESC`;
       db.query(sql, [PatientID], (err, rows) => err ? reject(err) : resolve(rows));
+    }),
+
+  getById: (AppointmentID) =>
+    new Promise((resolve, reject) => {
+      const sql = `
+        SELECT * FROM Appointment WHERE AppointmentID = ? LIMIT 1`;
+      db.query(sql, [AppointmentID], (err, rows) => err ? reject(err) : resolve(rows[0] || null));
+    }),
+
+  updateStatus: ({ AppointmentID, Status }) =>
+    new Promise((resolve, reject) => {
+      const sql = `
+        UPDATE Appointment SET Status = ? WHERE AppointmentID = ?`;
+      db.query(sql, [Status, AppointmentID], (err, result) => err ? reject(err) : resolve(result.affectedRows));
     }),
 };
 

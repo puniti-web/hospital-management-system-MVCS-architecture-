@@ -72,6 +72,8 @@ const ctrl = require("../controllers/appointmentController");
 router.post("/book", auth(["patient"]), ctrl.book);
 router.get("/doctor/my", auth(["doctor"]), ctrl.doctorMy);
 router.get("/patient/my", auth(["patient"]), ctrl.patientMy);
+// Doctor rejects an appointment by id
+router.post("/:id/reject", auth(["doctor"]), ctrl.reject);
 
 // Test endpoint (remove in production)
 router.post("/test-book", (req, res) => {
